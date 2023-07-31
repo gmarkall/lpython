@@ -723,8 +723,9 @@ int emit_llvm(const std::string &infile,
     // Src -> AST -> ASR
     LCompilers::LPython::AST::ast_t* ast = r.result;
     diagnostics.diagnostics.clear();
+    bool main_module = !use_nvvm;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-        r1 = LCompilers::LPython::python_ast_to_asr(al, lm, nullptr, *ast, diagnostics, compiler_options, true, "__main__", infile);
+        r1 = LCompilers::LPython::python_ast_to_asr(al, lm, nullptr, *ast, diagnostics, compiler_options, main_module, "__main__", infile);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!r1.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
