@@ -55,6 +55,10 @@ public:
         LCompilers::PassManager& lpm, diag::Diagnostics &diagnostics,
         const std::string &infile);
 
+    Result<std::unique_ptr<LLVMModule>> get_nvvm(ASR::TranslationUnit_t &asr,
+        LCompilers::PassManager& lpm, diag::Diagnostics &diagnostics,
+        const std::string &infile);
+
 private:
     Allocator al;
 #ifdef HAVE_LFORTRAN_LLVM

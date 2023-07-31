@@ -9,6 +9,7 @@
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
+#include <libasr/codegen/asr_to_nvvm.h>
 #else
 namespace LCompilers {
     class LLVMEvaluator {};
@@ -70,6 +71,43 @@ Result<std::unique_ptr<LLVMModule>> PythonCompiler::get_llvm3(
     return m;
 #else
     throw LCompilersException("LLVM is not enabled");
+#endif
+}
+
+Result<std::unique_ptr<LLVMModule>> PythonCompiler::get_nvvm(
+#ifdef HAVE_LFORTRAN_LLVM
+    ASR::TranslationUnit_t &asr, LCompilers::PassManager& lpm,
+    diag::Diagnostics &diagnostics, const std::string &infile
+#else
+    ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager&/*lpm*/,
+    diag::Diagnostics &/*diagnostics*/,const std::string &/*infile*/
+#endif
+    )
+{
+#ifdef HAVE_LFORTRAN_LLVM
+    eval_count++;
+    run_fn = "__lfortran_evaluate_" + std::to_string(eval_count);
+
+    // ASR -> LLVM
+    std::unique_ptr<LCompilers::LLVMModule> m;
+    Result<std::unique_ptr<LCompilers::LLVMModule>> res
+        = asr_to_nvvm(asr, diagnostics,
+            e->get_context(), al, lpm, compiler_options,
+            run_fn, infile);
+    if (res.ok) {
+        m = std::move(res.result);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return res.error;
+    }
+
+    if (compiler_options.fast) {
+        e->opt(*m->m_m);
+    }
+
+    return m;
+#else
+    throw LCompilersException("NVVM is not enabled");
 #endif
 }
 

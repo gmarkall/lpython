@@ -699,7 +699,8 @@ void print_time_report(std::vector<std::pair<std::string, double>> &times, bool 
 int emit_llvm(const std::string &infile,
     const std::string &runtime_library_dir,
     LCompilers::PassManager& pass_manager,
-    CompilerOptions &compiler_options)
+    CompilerOptions &compiler_options,
+    bool use_nvvm)
 {
     Allocator al(4*1024);
     LCompilers::diag::Diagnostics diagnostics;
@@ -734,8 +735,12 @@ int emit_llvm(const std::string &infile,
 
     // ASR -> LLVM
     LCompilers::PythonCompiler fe(compiler_options);
-    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = fe.get_llvm3(*asr, pass_manager, diagnostics, infile);
+    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>> res = 
+        use_nvvm ? 
+            fe.get_nvvm(*asr, pass_manager, diagnostics, infile)
+        :        
+            fe.get_llvm3(*asr, pass_manager, diagnostics, infile);
+
     if (compiler_options.emit_debug_info) {
         if (!compiler_options.emit_debug_line_column) {
             diagnostics.add(LCompilers::diag::Diagnostic(
@@ -1521,6 +1526,7 @@ int main(int argc, char *argv[])
         bool arg_no_color = false;
         bool arg_no_indent = false;
         bool show_llvm = false;
+        bool show_nvvm = false;
         bool show_asm = false;
         bool show_wat = false;
         bool time_report = false;
@@ -1577,6 +1583,7 @@ int main(int argc, char *argv[])
         app.add_flag("--show-ast", show_ast, "Show AST for the given python file and exit");
         app.add_flag("--show-asr", show_asr, "Show ASR for the given python file and exit");
         app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
+        app.add_flag("--show-nvvm", show_nvvm, "Show NVVM IR for the given file and exit");
         app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given python file and exit");
         app.add_flag("--show-c", show_c, "Show C translation source for the given python file and exit");
         app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
@@ -1774,7 +1781,7 @@ int main(int argc, char *argv[])
             outfile = basename + ".ast";
         } else if (show_asr) {
             outfile = basename + ".asr";
-        } else if (show_llvm) {
+        } else if (show_llvm || show_nvvm) {
             outfile = basename + ".ll";
         } else if (show_wat) {
             outfile = basename + ".wat";
@@ -1827,9 +1834,17 @@ int main(int argc, char *argv[])
         lpython_pass_manager.use_default_passes();
         if (show_llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return emit_llvm(arg_file, runtime_library_dir, lpython_pass_manager, compiler_options);
+            return emit_llvm(arg_file, runtime_library_dir, lpython_pass_manager, compiler_options, false);
 #else
             std::cerr << "The --show-llvm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+            return 1;
+#endif
+        }
+        if (show_nvvm) {
+#ifdef HAVE_LFORTRAN_LLVM
+            return emit_llvm(arg_file, runtime_library_dir, lpython_pass_manager, compiler_options, true);
+#else
+            std::cerr << "The --show-nvvm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
         }
