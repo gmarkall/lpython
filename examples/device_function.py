@@ -5,7 +5,3 @@ def add(x: i32, y: i32) -> i32:
     res: i32
     res = (x+3)*y
     return res
-
-
-# Included to avoid dead code
-add(2, 3)
