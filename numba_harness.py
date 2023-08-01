@@ -10,7 +10,6 @@ cmd = ['./src/bin/lpython', '--show-nvvm', 'examples/device_function.py']
 cp = subprocess.run(cmd, capture_output=True)
 
 code = cp.stdout.decode()
-print(code)
 
 # Dummy function for overload
 def lfortran_add(x, y):
