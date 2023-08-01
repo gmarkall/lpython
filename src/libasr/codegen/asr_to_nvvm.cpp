@@ -800,6 +800,18 @@ public:
         module = std::make_unique<llvm::Module>("LFortran", context);
         module->setDataLayout("e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-i128:128:128-f32:32:32-f64:64:64-v16:16:16-v32:32:32-v64:64:64-v128:128:128-n16:32:64");
         module->setTargetTriple("nvptx64-nvidia-cuda");
+
+        llvm::LLVMContext &Ctx = module->getContext();
+        llvm::Metadata *MDVals[] = {
+          llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt32Ty(Ctx), 2)),
+          llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt32Ty(Ctx), 0)),
+          llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt32Ty(Ctx), 3)),
+          llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt32Ty(Ctx), 1))
+        };
+        llvm::MDNode *MD = llvm::MDNode::get(Ctx, MDVals);
+        llvm::NamedMDNode *NMD = module->getOrInsertNamedMetadata("nvvmir.version");
+        NMD->addOperand(MD);
+
         llvm_utils->set_module(module.get());
 
         if (compiler_options.emit_debug_info) {

@@ -31,6 +31,10 @@ return:                                           ; preds = %unreachable_after_r
   %5 = load i32, i32* %_lpython_return_variable, align 4
   ret i32 %5
 }
+
+!nvvmir.version = !{!0}
+
+!0 = !{i32 2, i32 0, i32 3, i32 1}
 """
 
 
@@ -69,12 +73,11 @@ def ol_lfortran_add(x, y):
     return impl
 
 
-@cuda.jit
+@cuda.jit(extra_llvm=[code])
 def f(x, y):
     res = lfortran_add(x, y)
     print(res)
 
-breakpoint()
 
-f[1, 1](2, 3)
+f[1, 1](3, 3)
 cuda.synchronize()
