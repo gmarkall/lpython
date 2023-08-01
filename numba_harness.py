@@ -4,40 +4,15 @@ from numba.core import cgutils
 from numba.core.extending import intrinsic, overload
 from numba.core.typing import signature
 
+import subprocess
 
-code = """\
-; ModuleID = 'LFortran'
-source_filename = "LFortran"
-target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-i128:128:128-f32:32:32-f64:64:64-v16:16:16-v32:32:32-v64:64:64-v128:128:128-n16:32:64"
-target triple = "nvptx64-nvidia-cuda"
+cmd = ['./src/bin/lpython', '--show-nvvm', 'examples/device_function.py']
+cp = subprocess.run(cmd, capture_output=True)
 
-define i32 @__module___main___add(i32* %x, i32* %y) {
-.entry:
-  %_lpython_return_variable = alloca i32, align 4
-  %res = alloca i32, align 4
-  %0 = load i32, i32* %x, align 4
-  %1 = add i32 %0, 3
-  %2 = load i32, i32* %y, align 4
-  %3 = mul i32 %1, %2
-  store i32 %3, i32* %res, align 4
-  %4 = load i32, i32* %res, align 4
-  store i32 %4, i32* %_lpython_return_variable, align 4
-  br label %return
+code = cp.stdout.decode()
+print(code)
 
-unreachable_after_return:                         ; No predecessors!
-  br label %return
-
-return:                                           ; preds = %unreachable_after_return, %.entry
-  %5 = load i32, i32* %_lpython_return_variable, align 4
-  ret i32 %5
-}
-
-!nvvmir.version = !{!0}
-
-!0 = !{i32 2, i32 0, i32 3, i32 1}
-"""
-
-
+# Dummy function for overload
 def lfortran_add(x, y):
     pass
 
