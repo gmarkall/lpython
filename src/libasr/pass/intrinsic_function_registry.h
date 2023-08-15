@@ -588,7 +588,7 @@ class ASRBuilder {
 namespace NullaryIntrinsicFunction {
 
 static inline ASR::asr_t* create_NullaryFunction(Allocator& al, const Location& loc,
-    Vec<ASR::expr_t*>& args, eval_intrinsic_function eval_function,
+    Vec<ASR::expr_t*>& args,
     int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type) {
     ASR::expr_t *value = nullptr;
 
@@ -3112,8 +3112,8 @@ namespace X {                                                                   
         }                                                                                 \
                                                                                           \
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));  \
-        return UnaryIntrinsicFunction::create_NullaryFunction(al, loc, args, eval_##X,    \
-            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X), 0);                    \
+        return NullaryIntrinsicFunction::create_NullaryFunction(al, loc, args,            \
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X), 0, to_type);           \
     }                                                                                     \
                                                                                           \
 } // namespace X
