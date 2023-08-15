@@ -72,6 +72,7 @@ enum class IntrinsicFunctions : int64_t {
     SymbolicLog,
     SymbolicExp,
     SymbolicAbs,
+    CudaTid,
     // ...
 };
 
@@ -128,6 +129,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(SymbolicLog)
         INTRINSIC_NAME_CASE(SymbolicExp)
         INTRINSIC_NAME_CASE(SymbolicAbs)
+        INTRINSIC_NAME_CASE(CudaTid)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -582,6 +584,21 @@ class ASRBuilder {
     }
 
 };
+
+namespace NullaryIntrinsicFunction {
+
+static inline ASR::asr_t* create_NullaryFunction(Allocator& al, const Location& loc,
+    Vec<ASR::expr_t*>& args, eval_intrinsic_function eval_function,
+    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type) {
+    ASR::expr_t *value = nullptr;
+
+    return ASRUtils::make_IntrinsicFunction_t_util(al, loc, intrinsic_id,
+        args.p, args.n, overload_id, type, value);
+}
+
+
+
+} // namespace NullaryIntrinsicFunction
 
 namespace UnaryIntrinsicFunction {
 
@@ -3071,6 +3088,37 @@ create_symbolic_unary_macro(SymbolicExp)
 create_symbolic_unary_macro(SymbolicAbs)
 create_symbolic_unary_macro(SymbolicExpand)
 
+#define create_symbolic_nullary_macro(X)                                                  \
+namespace X {                                                                             \
+                                                                                          \
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x,                     \
+            diag::Diagnostics& diagnostics) {                                             \
+        const Location& loc = x.base.base.loc;                                            \
+        ASRUtils::require_impl(x.n_args == 0,                                             \
+            #X " must have no input arguments", loc, diagnostics);                        \
+    }                                                                                     \
+                                                                                          \
+    static inline ASR::expr_t* eval_##X(Allocator &/*al*/, const Location &/*loc*/,       \
+            Vec<ASR::expr_t*> &/*args*/) {                                                \
+        /*TODO*/                                                                          \
+        return nullptr;                                                                   \
+    }                                                                                     \
+                                                                                          \
+    static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,              \
+            Vec<ASR::expr_t*>& args,                                                      \
+            const std::function<void (const std::string &, const Location &)> err) {      \
+        if (args.size() != 0) {                                                           \
+            err("Intrinsic " #X " function accepts no arguments", loc);                   \
+        }                                                                                 \
+                                                                                          \
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));  \
+        return UnaryIntrinsicFunction::create_NullaryFunction(al, loc, args, eval_##X,    \
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X), 0);                    \
+    }                                                                                     \
+                                                                                          \
+} // namespace X
+
+create_symbolic_nullary_macro(CudaTid)
 
 namespace IntrinsicFunctionRegistry {
 
@@ -3168,6 +3216,8 @@ namespace IntrinsicFunctionRegistry {
             {nullptr, &SymbolicExp::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAbs),
             {nullptr, &SymbolicAbs::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::CudaTid),
+            {nullptr, &CudaTid::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
@@ -3260,6 +3310,8 @@ namespace IntrinsicFunctionRegistry {
             "SymbolicExp"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAbs),
             "SymbolicAbs"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::CudaTid),
+            "CudaTid"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Any),
             "any"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sum),
@@ -3315,6 +3367,7 @@ namespace IntrinsicFunctionRegistry {
                 {"SymbolicLog", {&SymbolicLog::create_SymbolicLog, &SymbolicLog::eval_SymbolicLog}},
                 {"SymbolicExp", {&SymbolicExp::create_SymbolicExp, &SymbolicExp::eval_SymbolicExp}},
                 {"SymbolicAbs", {&SymbolicAbs::create_SymbolicAbs, &SymbolicAbs::eval_SymbolicAbs}},
+                {"CudaTid", {&CudaTid::create_CudaTid, &CudaTid::eval_CudaTid}},
 
     };
 

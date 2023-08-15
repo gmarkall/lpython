@@ -26,6 +26,7 @@ struct IntrinsicNodeHandler {
             {"reshape", &handle_reshape},
             {"ord", &handle_intrinsic_ord},
             {"chr", &handle_intrinsic_chr},
+            {"cuda_tid", &handle_intrinsic_cuda_tid},
         };
     }
 
@@ -471,6 +472,17 @@ struct IntrinsicNodeHandler {
             throw SemanticError("'" + ASRUtils::type_to_str_python(type) + "' object cannot be interpreted as an integer",
                 arg->base.loc);
         }
+    }
+
+    static ASR::asr_t* handle_intrinsic_cuda_tid(Allocator &al, Vec<ASR::call_arg_t> args,
+                                                 const Location &loc) {
+        if (args.size() != 0) {
+            throw SemanticError("cuda_tid() takes no arguments (" +
+                std::to_string(args.size()) + " given)", loc);
+        }
+
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_UnsignedInteger_t(al, loc, 4));
+        return ASR::make_CudaTid_t(al, loc, nullptr, return_type, nullptr);
     }
 
 }; // IntrinsicNodeHandler
