@@ -1,3 +1,3 @@
 from lpython import i64
 
-x: i64 = int(1)
+x: i64 = int(13)
